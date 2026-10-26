@@ -3,12 +3,9 @@ package bookmyshow;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class BookingManager {
+public class BookingManagerUsingAtomicCAS {
 
     private final Map<String, Event> events = new HashMap<>();
 

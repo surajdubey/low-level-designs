@@ -1,6 +1,5 @@
 package bookmyshow;
 
-import java.awt.print.Book;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,7 +7,7 @@ public class BookMyShowDemo {
     public static void main(String[] args) {
         System.out.println("Hello World");
 
-        final BookingManager bookingManager = new BookingManager();
+        final BookingManagerUsingAtomicCAS bookingManager = new BookingManagerUsingAtomicCAS();
 
         Event event = new Event();
         event.id = "Test event";
