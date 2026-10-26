@@ -34,23 +34,42 @@ public class BookingManager {
                 "COMPLETED"
         );
 
-
-        consumedCapacityPerEvent.computeIfAbsent(event.id, (key) -> new AtomicInteger(0));
         AtomicInteger consumedCapacity = consumedCapacityPerEvent.get(event.id);
 
-        if (consumedCapacity.get() < event.totalTickets) {
-            if (consumedCapacity.addAndGet(1) <= event.totalTickets) {
-                // reservation can go through
-                bookingsForEvents.get(event.id).offer(booking);
-                return booking;
+        int oldValue;
+        int newValue;
+        do {
+            oldValue = consumedCapacity.get();
+            newValue = oldValue + 1;
+
+            if ((newValue <= event.totalTickets)) {
+                if (consumedCapacity.compareAndSet(oldValue, newValue)) {
+                    bookingsForEvents.get(event.id).offer(booking);
+                    return booking;
+                }
+            } else {
+                break;
             }
+        } while (true);
+
+/*
+        if (consumedCapacity.addAndGet(1) <= event.totalTickets) {
+            // reservation can go through
+            bookingsForEvents.get(event.id).offer(booking);
+            return booking;
+        } else {
+            consumedCapacity.getAndDecrement();
         }
+*/
+
         throw new Exception("Can not book tickets, tickets over for user " + user.id);
 
     }
 
     public void createEvent(Event event) {
         bookingsForEvents.put(event.id, new ConcurrentLinkedDeque<>());
+        consumedCapacityPerEvent.computeIfAbsent(event.id, (key) -> new AtomicInteger(0));
+
     }
 
     public Event getEventDetails(String eventId) {
