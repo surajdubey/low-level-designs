@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 public class RateLimiterDemo {
 
-    private static volatile boolean shutCleanupProcessNow = false;
 
     public static void main(String[] args) throws InterruptedException {
         ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
