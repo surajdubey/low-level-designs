@@ -1,4 +1,4 @@
-package ratelimiter;
+package ratelimiter.fixedwindow;
 
 public record Configuration(String id, int limit, LIMIT_TYPE limitType) {
 }

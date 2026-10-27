@@ -1,4 +1,4 @@
-package ratelimiter;
+package ratelimiter.fixedwindow;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +7,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class RateLimiterDemo {
-
 
     public static void main(String[] args) throws InterruptedException {
         ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();

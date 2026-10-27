@@ -1,4 +1,4 @@
-package ratelimiter;
+package ratelimiter.fixedwindow;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
