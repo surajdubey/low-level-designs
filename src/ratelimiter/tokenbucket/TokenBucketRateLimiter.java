@@ -4,16 +4,12 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TokenBucketRateLimiter {
 
     Map<String, TokenBucketConfiguration> configurationPerUser = new ConcurrentHashMap<>();
-//    Map<String, AtomicInteger> requestProcessedPerUser = new ConcurrentHashMap<>();
-
-    Map<String, AtomicInteger> availableTokensPerUser = new ConcurrentHashMap<>();
-    Map<String, AtomicLong> lastRefillTimePerUser = new ConcurrentHashMap<>();
+    Map<String, AtomicReference<BucketStatus>> bucketStatusPerUser = new ConcurrentHashMap<>();
 
     public boolean process(String userId) {
         TokenBucketConfiguration configuration = configurationPerUser.get(userId);
@@ -21,40 +17,39 @@ public class TokenBucketRateLimiter {
             return false;
         }
 
-        AtomicInteger availableTokens = availableTokensPerUser.get(userId);
-        AtomicLong lastRefilledEpoch = lastRefillTimePerUser.get(userId);
-        lastRefilledEpoch.compareAndSet(0, getCurrentEpoch() - 1_000);
+        AtomicReference<BucketStatus> bucketStatus = bucketStatusPerUser.get(userId);
 
         while (true) {
             long currentEpoch = getCurrentEpoch();
-            int oldValue = availableTokens.get();
-            int newValue = oldValue - 1;
+            BucketStatus currentBucketStatus = bucketStatus.get();
+            long oldValue = currentBucketStatus.availableCapacity;
+            long newValue = oldValue - 1;
 
-            long lastRefilledEpochValue = lastRefilledEpoch.get();
-            long allowedNewTokens = (currentEpoch - lastRefilledEpochValue)
-                    * configuration.refillPerTimeUnit();
+            long lastRefilledEpochValue = currentBucketStatus.lastUpdatedEpoch;
+            double allowedRequestsDouble = (currentEpoch - lastRefilledEpochValue)
+                    * configuration.refillPerMillisecond;
+            long allowedNewRequests = (long) (allowedRequestsDouble);
 
-            long allowedRequests = Math.min(configuration.bucketCapacity(), allowedNewTokens + newValue);
-            if (newValue <= 0) {
+            long remainingRequests = Math.min(configuration.bucketCapacity, allowedNewRequests + newValue);
+            if (remainingRequests <= 0) {
                 return false;
             }
 
-            if (availableTokens.compareAndSet(oldValue, newValue)) {
-                lastRefilledEpoch.compareAndSet(lastRefilledEpochValue, currentEpoch);
+            BucketStatus newStatus = new BucketStatus(remainingRequests, currentEpoch);
+            if (bucketStatus.compareAndSet(currentBucketStatus, newStatus)) {
                 return true;
             }
         }
     }
 
     private long getCurrentEpoch() {
-        return Instant.now()
-                .truncatedTo(ChronoUnit.SECONDS)
-                .toEpochMilli();
+        return System.nanoTime()/1_000_000;
     }
 
-    public void addConfiguration(String userId) {
-//        requestProcessedPerUser.putIfAbsent(userId, new AtomicInteger(0));
-        availableTokensPerUser.putIfAbsent(userId, new AtomicInteger(0));
-        lastRefillTimePerUser.putIfAbsent(userId, new AtomicLong(0));
+    public void addConfiguration(String userId, int capacity, int refillPerSecond) {
+        configurationPerUser.computeIfAbsent(userId, (key) -> new TokenBucketConfiguration(capacity, refillPerSecond));
+        bucketStatusPerUser.computeIfAbsent(userId,
+                (key) -> new AtomicReference<>(new BucketStatus(capacity, getCurrentEpoch()))
+        );
     }
 }
