@@ -51,16 +51,6 @@ public class BookingManagerUsingAtomicCAS {
             }
         } while (true);
 
-/*
-        if (consumedCapacity.addAndGet(1) <= event.totalTickets) {
-            // reservation can go through
-            bookingsForEvents.get(event.id).offer(booking);
-            return booking;
-        } else {
-            consumedCapacity.getAndDecrement();
-        }
-*/
-
         throw new Exception("Can not book tickets, tickets over for user " + user.id);
 
     }

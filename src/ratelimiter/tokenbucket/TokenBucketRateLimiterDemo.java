@@ -20,7 +20,7 @@ public class TokenBucketRateLimiterDemo {
                 }
             }
 //            System.out.println("Consumed ms " + (rateLimiter.getCurrentEpoch() - startTime));
-            System.out.println("failed " + failed + " new tokens " + rateLimiter.totalAdded);
+            System.out.println("failed " + failed + " new tokens " + rateLimiter.totalAdded/10_000);
         });
 
         t1.start();
