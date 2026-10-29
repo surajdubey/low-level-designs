@@ -5,8 +5,7 @@ import java.util.concurrent.*;
 
 public class ConnectionPoolManager {
     private final Semaphore semaphore;
-    private final Map<Connection, Status> connectionStatusMap = new ConcurrentHashMap<>();
-    private final BlockingQueue<Connection> linkedBlockingQueue = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<Connection> linkedBlockingQueue = new LinkedBlockingQueue<>();
 
     public ConnectionPoolManager(int numberOfConnections) {
         semaphore = new Semaphore(numberOfConnections);
@@ -18,7 +17,6 @@ public class ConnectionPoolManager {
     private void submitTask() {
         Connection connection = new DatabaseConnection();
         connection.createConnection();
-        connectionStatusMap.put(connection, Status.AVAILABLE);
         linkedBlockingQueue.add(connection);
     }
 
@@ -29,7 +27,6 @@ public class ConnectionPoolManager {
 
             try {
                 Connection connection = linkedBlockingQueue.take();
-                connectionStatusMap.put(connection, Status.ACQUIRED);
                 return connection;
             } catch (InterruptedException e) {
                 semaphore.release();
@@ -46,18 +43,24 @@ public class ConnectionPoolManager {
             return;
         }
 
-        if (!connectionStatusMap.containsKey(connection)) {
+        if (!linkedBlockingQueue.contains(connection)) {
+            System.out.println(String.format("Connection %s is invalid to be release", connection));
             return;
         }
-
-        // either it throws or succeeds
-        connectionStatusMap.compute(connection, (key, value) -> {
-            if (value == Status.AVAILABLE) {
-                throw new IllegalStateException("Connection is in invalid state for release");
+    /*
+            if (!connec.containsKey(connection)) {
+                return;
             }
-            return Status.AVAILABLE;
 
-        });
+            // either it throws or succeeds
+            connectionStatusMap.compute(connection, (key, value) -> {
+                if (value == Status.AVAILABLE) {
+                    throw new IllegalStateException("Connection is in invalid state for release");
+                }
+                return Status.AVAILABLE;
+
+            });
+    */
 
         linkedBlockingQueue.add(connection);
         semaphore.release();

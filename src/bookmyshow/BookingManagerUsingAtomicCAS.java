@@ -33,8 +33,7 @@ public class BookingManagerUsingAtomicCAS {
                 "COMPLETED"
         );
 
-        AtomicInteger consumedCapacity = consumedCapacityPerEvent.get(event.id);
-
+        AtomicInteger consumedCapacity = consumedCapacityPerEvent.computeIfAbsent(event.id, (key) -> new AtomicInteger(0));
         int oldValue;
         int newValue;
         do {
@@ -56,9 +55,7 @@ public class BookingManagerUsingAtomicCAS {
     }
 
     public void createEvent(Event event) {
-        bookingsForEvents.put(event.id, new ConcurrentLinkedDeque<>());
-        consumedCapacityPerEvent.computeIfAbsent(event.id, (key) -> new AtomicInteger(0));
-
+        bookingsForEvents.computeIfAbsent(event.id, (key) -> new ConcurrentLinkedDeque<>());
     }
 
     public Event getEventDetails(String eventId) {
