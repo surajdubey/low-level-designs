@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 public class ConnectionPoolManager {
     private final Semaphore semaphore;
     private final Map<Connection, Status> connectionStatusMap = new ConcurrentHashMap<>();
-    private final ConcurrentLinkedQueue<Connection> concurrentLinkedQueue = new ConcurrentLinkedQueue<>();
+    private final BlockingQueue<Connection> linkedBlockingQueue = new LinkedBlockingQueue<>();
 
     public ConnectionPoolManager(int numberOfConnections) {
         semaphore = new Semaphore(numberOfConnections);
@@ -19,14 +19,26 @@ public class ConnectionPoolManager {
         Connection connection = new DatabaseConnection();
         connection.createConnection();
         connectionStatusMap.put(connection, Status.AVAILABLE);
-        concurrentLinkedQueue.add(connection);
+        linkedBlockingQueue.add(connection);
     }
 
     public Connection getWorkingConnection() throws InterruptedException {
-        semaphore.acquire();
-        Connection connection = concurrentLinkedQueue.remove();
-        connectionStatusMap.put(connection, Status.ACQUIRED);
-        return connection;
+
+        try {
+            semaphore.acquire();
+
+            try {
+                Connection connection = linkedBlockingQueue.take();
+                connectionStatusMap.put(connection, Status.ACQUIRED);
+                return connection;
+            } catch (InterruptedException e) {
+                semaphore.release();
+                throw e;
+            }
+        } catch (InterruptedException e) {
+            System.out.println(e.getMessage());
+            throw e;
+        }
     }
 
     public void release(Connection connection) {
@@ -38,17 +50,17 @@ public class ConnectionPoolManager {
             return;
         }
 
-        Status newStatus = connectionStatusMap.compute(connection, (key, value) -> {
-            if (value == Status.ACQUIRED) {
-                return Status.AVAILABLE;
+        // either it throws or succeeds
+        connectionStatusMap.compute(connection, (key, value) -> {
+            if (value == Status.AVAILABLE) {
+                throw new IllegalStateException("Connection is in invalid state for release");
             }
+            return Status.AVAILABLE;
 
-            return Status.ANOTHER_STATE;
         });
-        if (newStatus == Status.AVAILABLE) {
-            concurrentLinkedQueue.add(connection);
-            semaphore.release();
-        }
+
+        linkedBlockingQueue.add(connection);
+        semaphore.release();
     }
 
     public interface Connection {
@@ -74,7 +86,6 @@ public class ConnectionPoolManager {
 
     private enum Status {
         ACQUIRED,
-        AVAILABLE,
-        ANOTHER_STATE
+        AVAILABLE
     }
 }
