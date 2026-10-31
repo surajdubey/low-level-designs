@@ -1,10 +1,12 @@
 package connectionpool;
 
 import java.util.Deque;
-import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import static connectionpool.ConnectionPoolManager.*;
+import static connectionpool.ConnectionPoolManager.Connection;
 
 public class ConnectionPoolDemo {
     public static void main(String[] args) throws InterruptedException {

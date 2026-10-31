@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 public class RateLimiterDemo {
 
     public static void main(String[] args) throws InterruptedException {
+
         ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         String userId = "id1";
         Configuration configuration = new Configuration(

@@ -1,7 +1,7 @@
 package connectionpool;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 
 public class ConnectionPoolManager {
     private final Semaphore semaphore;
